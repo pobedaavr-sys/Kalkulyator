@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Production ROI — Precision Calculator v4.1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --border: #e5e7eb;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --accent: #e11d48;
+            --green: #059669;
+            --green-bg: #f0fdf4;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --container-mw: 1280px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg); 
+            color: var(--text-main); 
+            font-size: 14px; 
+            line-height: 1.4;
+            overflow-x: hidden;
+        }
+
+        /* Main Centered Wrapper */
+        .page-wrapper {
+            width: 100%;
+            padding: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container { 
+            width: 100%;
+            max-width: var(--container-mw); 
+            padding: 0 24px;
+            margin: 0 auto;
+        }
+
+        /* Layout Grid System */
+        .layout-grid { 
+            display: grid; 
+            grid-template-columns: 310px 1fr 340px; 
+            gap: 20px; 
+            align-items: start;
+        }
+
+        /* Responsiveness: Laptop */
+        @media (max-width: 1280px) {
+            .layout-grid {
+                grid-template-columns: 290px 1fr 310px;
+                gap: 16px;
+            }
+            .container { padding: 0 20px; }
+        }
+
+        /* Responsiveness: Tablet */
+        @media (max-width: 1024px) {
+            .layout-grid {
+                grid-template-columns: 280px 1fr; 
+                grid-template-areas: 
+                    "sidebar dashboard"
+                    "sidebar impact";
+            }
+            .side-inputs { grid-area: sidebar; }
+            .center-main { grid-area: dashboard; }
+            .side-impact { grid-area: impact; }
+        }
+
+        /* Responsiveness: Tablet Small */
+        @media (max-width: 850px) {
+            .layout-grid {
+                grid-template-columns: 1fr;
+                grid-template-areas: 
+                    "sidebar"
+                    "dashboard"
+                    "impact";
+            }
+        }
+
+        /* Responsiveness: Mobile */
+        @media (max-width: 767px) {
+            .container { padding: 0 12px; }
+            .page-wrapper { padding: 12px 0; }
+            .layout-grid { gap: 12px; }
+            .major-result { grid-template-columns: 1fr !important; gap: 16px !important; }
+            .inv-model { grid-template-columns: 1fr !important; }
+            .mini-viz { grid-template-columns: 1fr !important; }
+            .res-val { font-size: 24px !important; }
+            .btn-calc { padding: 16px !important; font-size: 16px !important; }
+        }
+
+        /* Common Components */
+        .card { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); }
+        .label-caps { font-size: 9px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.08em; margin-bottom: 6px; display: block; }
+        
+        /* Inputs Block */
+        .side-inputs { display: flex; flex-direction: column; gap: 14px; }
+        @media (min-width: 1025px) {
+            .side-inputs { position: sticky; top: 20px; }
+        }
+        .input-box { display: flex; flex-direction: column; gap: 4px; }
+        .field { 
+            width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); 
+            font-size: 13px; font-family: inherit; background: #fff; outline: none; transition: 0.2s;
+        }
+        .field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.05); }
+
+        .toggle-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+        .toggle-btn { position: relative; cursor: pointer; }
+        .toggle-btn input { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+        .toggle-label { 
+            display: block; text-align: center; padding: 8px 0; border: 1px solid var(--border); 
+            border-radius: 8px; font-size: 11px; font-weight: 700; background: #fff; transition: 0.2s;
+        }
+        .toggle-btn input:checked + .toggle-label { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+        .btn-calc { 
+            background: var(--accent); color: #fff; border: none; padding: 14px; border-radius: 12px; 
+            font-weight: 800; font-size: 15px; cursor: pointer; margin-top: 5px; transition: 0.2s;
+        }
+        .btn-calc:hover { background: #be123c; transform: translateY(-1px); }
+
+        /* Dashboard Results */
+        .center-main { display: flex; flex-direction: column; gap: 16px; }
+        
+        .inv-model { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .inv-cell { padding: 12px; border-radius: 12px; background: #fff; border: 1px solid var(--border); }
+        .inv-val { font-size: 15px; font-weight: 800; color: var(--text-main); }
+
+        .major-result { 
+            background: #111827; color: #fff; border-radius: 20px; padding: 24px; 
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .res-item { display: flex; flex-direction: column; gap: 6px; }
+        .res-val { font-size: 28px; font-weight: 900; letter-spacing: -0.02em; line-height: 1; color: #fff; }
+        .res-lab { font-size: 10px; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .mini-viz { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .viz-box { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 14px; display: flex; gap: 14px; align-items: center; justify-content: space-between; }
+        .viz-bars { display: flex; align-items: flex-end; gap: 3px; height: 36px; width: 60px; border-bottom: 1px solid #f3f4f6; }
+        .bar { flex: 1; background: var(--accent); border-radius: 2px 2px 0 0; min-height: 2px; transition: height 0.4s; }
+
+        /* Impact Side Card */
+        .side-impact { height: fit-content; }
+        .impact-table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .impact-table { width: 100%; border-collapse: collapse; min-width: 300px; }
+        .impact-table th { text-align: left; font-size: 10px; color: var(--text-muted); padding: 10px 6px; border-bottom: 2px solid var(--border); text-transform: uppercase; }
+        .impact-table td { padding: 12px 6px; border-bottom: 1px solid #f9fafb; font-size: 13px; }
+        .t-label { font-weight: 700; color: var(--text-muted); }
+        .t-base { color: var(--text-muted); text-align: center; }
+        .t-target { font-weight: 800; color: var(--text-main); text-align: center; }
+        .t-win { color: var(--green); font-weight: 900; text-align: right; }
+
+        /* Sources Section */
+        .footer-info { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 15px; }
+        .trigger-link { font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer; text-align: center; display: block; padding: 10px; border-radius: 8px; border: 1px dashed var(--border); }
+        .trigger-link:hover { background: #f9fafb; color: var(--text-main); }
+        .sources-grid { display: none; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-top: 10px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .src-card { font-size: 11px; line-height: 1.5; color: var(--text-muted); }
+        .src-card a { color: var(--accent); text-decoration: none; font-weight: 700; display: block; margin-top: 4px; }
+
+        .disclaimer-text { font-size: 11px; color: var(--text-muted); line-height: 1.6; background: #fdf2f2; padding: 12px; border-radius: 12px; border: 1px solid #fee2e2; }
+
+        /* Tabs for Scenarios on Side */
+        .scen-stack { display: flex; flex-direction: column; gap: 5px; }
+        .scen-stack .toggle-label { text-align: left; padding: 10px 15px; }
+
+        /* General Helper */
+        .animate-up { animation: fadeInUp 0.5s ease forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+    <div class="container">
+        
+        <div class="layout-grid">
+            
+            <!-- LEFT: CONFIGURATION -->
+            <div class="side-inputs card">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
+                    <div style="width: 4px; height: 18px; background: var(--accent); border-radius: 2px;"></div>
+                    <h2 style="font-size: 14px; font-weight: 800; letter-spacing: -0.02em;">Конфигуратор ROI</h2>
+                </div>
+                
+                <div class="input-box">
+                    <label class="label-caps">Выберите проект / пакет</label>
+                    <select id="pSel" class="field" onchange="window.updateUI()"></select>
+                    <div id="pDesc" style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.3;"></div>
+                </div>
+
+                <div class="input-box">
+                    <label class="label-caps">Рекламный бюджет, ₽</label>
+                    <input type="number" id="adBud" class="field" value="50000" step="5000" min="5000">
+                </div>
+
+                <div class="input-box">
+                    <label class="label-caps">Период продвижения</label>
+                    <div class="toggle-grid" id="perGrid"></div>
+                </div>
+
+                <div class="input-box">
+                    <label class="label-caps">Сценарий контента</label>
+                    <div class="scen-stack">
+                        <label class="toggle-btn">
+                            <input type="radio" name="strat" value="BASE" onchange="window.calculate()">
+                            <span class="toggle-label">Только текст (Baseline)</span>
+                        </label>
+                        <label class="toggle-btn">
+                            <input type="radio" name="strat" value="VIDEO" onchange="window.calculate()">
+                            <span class="toggle-label">Только видео (Клипы)</span>
+                        </label>
+                        <label class="toggle-btn">
+                            <input type="radio" name="strat" value="COMBO" checked onchange="window.calculate()">
+                            <span class="toggle-label">Текст + Видео + Клипы</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button class="btn-calc" onclick="window.calculate()">Рассчитать прогноз</button>
+            </div>
+
+            <!-- CENTER: DASHBOARD -->
+            <div class="center-main">
+                <div class="inv-model">
+                    <div class="inv-cell">
+                        <span class="label-caps">Цена пакета</span>
+                        <div class="inv-val" id="resPkgPrice">0 ₽</div>
+                    </div>
+                    <div class="inv-cell">
+                        <span class="label-caps">Рекл. бюджет</span>
+                        <div class="inv-val" id="resAdBudget">0 ₽</div>
+                    </div>
+                    <div class="inv-cell" style="border-color: var(--accent); background: #fffcfc;">
+                        <span class="label-caps" style="color: var(--accent)">Всего за период</span>
+                        <div class="inv-val" id="resTotal" style="color: var(--accent)">0 ₽</div>
+                    </div>
+                </div>
+
+                <div id="resGroup" class="major-result" style="display: none;">
+                    <div class="res-item">
+                        <span class="res-lab">Охват аудитории</span>
+                        <div class="res-val" id="outReach">0</div>
+                    </div>
+                    <div class="res-item">
+                        <span class="res-lab">Подписчики</span>
+                        <div class="res-val" id="outSub">0</div>
+                    </div>
+                    <div class="res-item">
+                        <span class="res-lab">Целевой шаг</span>
+                        <div class="res-val" id="outNext">0</div>
+                    </div>
+                </div>
+
+                <div class="mini-viz">
+                    <div class="viz-box">
+                        <div class="viz-bars" id="barChart"></div>
+                        <div style="text-align: right;">
+                            <span class="label-caps">Динамика</span>
+                            <div style="font-size: 11px; font-weight: 700;">Накопительно</div>
+                        </div>
+                    </div>
+                    <div class="viz-box">
+                        <div style="font-size: 20px; font-weight: 900; color: var(--accent);" id="winFactor">+0%</div>
+                        <div style="text-align: right;">
+                            <span class="label-caps">Win-фактор</span>
+                            <div style="font-size: 11px; font-weight: 700;">Рост лояльности</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="disclaimer-text">
+                    <b>Бизнес-инсайт:</b> Видео и Клипы раскачивают алгоритмы VK. Один подписчик, пришедший с видео, обходится на 65% дешевле за счет вирального охвата (Clips/Reels) и более высокого доверия к формату.
+                </div>
+            </div>
+
+            <!-- RIGHT: IMPACT ANALYTICS -->
+            <div class="side-impact card">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                    <div style="width: 4px; height: 18px; background: var(--green); border-radius: 2px;"></div>
+                    <h2 style="font-size: 14px; font-weight: 800; letter-spacing: -0.02em;">Эффект от видео</h2>
+                </div>
+                
+                <div class="impact-table-wrapper">
+                    <table class="impact-table">
+                        <thead>
+                            <tr>
+                                <th>Метрика</th>
+                                <th>Текст</th>
+                                <th>Boost</th>
+                                <th>Рост</th>
+                            </tr>
+                        </thead>
+                        <tbody id="impactBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="footer-info">
+                    <span class="trigger-link" id="srcTrigger">Показать методологию и источники</span>
+                    <div class="sources-grid" id="srcGrid">
+                        <div class="src-card" style="grid-column: 1/-1; border-bottom: 1px solid #f3f4f6; padding-bottom: 10px;">
+                            Модель КПИ опирается на актуальные данные VK Video Insight 2026, исследования LiveDune и Wyzowl.
+                        </div>
+                        <div class="src-card">
+                            <b>VK: Рост x17</b>
+                            <a href="https://iz.ru/vk-video-growth" target="_blank">iz.ru/vk-insights</a>
+                        </div>
+                        <div class="src-card">
+                            <b>LiveDune: Тренды 2026</b>
+                            <a href="https://livedune.com/reports" target="_blank">livedune.com/2026</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- layout-grid -->
+    </div> <!-- container -->
+</div> <!-- page-wrapper -->
+
+<script>
+/**
+ * ARCHITECTURE v4.1 (High Density & Multi-Grid)
+ */
+const CONFIG = {
+    packages: [
+        { id: 'p1', name: 'Пакет 50 000', price: 50000, desc: 'Аватар + новостной блок + 2 новости' },
+        { id: 'p2', name: 'Ролик 18 000', price: 18000, desc: 'Простой рекламный ролик' },
+        { id: 'p3', name: 'Ролик 25 000', price: 25000, desc: 'Ролик с игровой ситуацией' },
+        { id: 'p4', name: 'Ролик 30 000', price: 30000, desc: 'Креативный ролик / сценарий' }
+    ],
+    periods: [
+        { v: 1, l: '1М', m: 1.00 }, { v: 3, l: '3М', m: 1.18 },
+        { v: 6, l: '6М', m: 1.38 }, { v: 12, l: '12М', m: 1.65 }
+    ],
+    scenarios: {
+        BASE:  { r: 2300, c: 18, s: 2.5, n: 1.0 },
+        VIDEO: { r: 3000, c: 27, s: 4.8, n: 1.9 },
+        COMBO: { r: 3400, c: 33, s: 6.2, n: 2.2 }
+    },
+    weights: {
+        1: [1], 3: [0.28, 0.33, 0.39],
+        6: [0.11, 0.13, 0.15, 0.18, 0.20, 0.23],
+        12: [0.05, 0.05, 0.06, 0.06, 0.07, 0.08, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13]
+    }
+};
+
+const fmt = v => Math.round(v).toLocaleString('ru-RU');
+
+function init() {
+    const ps = document.getElementById('pSel');
+    CONFIG.packages.forEach(p => ps.add(new Option(p.name, p.id)));
+    
+    const per = document.getElementById('perGrid');
+    CONFIG.periods.forEach((p,i) => {
+        per.innerHTML += `<label class="toggle-btn"><input type="radio" name="mon" value="${p.v}" ${i===0?'checked':''} onchange="window.calculate()"><span class="toggle-label">${p.l}</span></label>`;
+    });
+
+    document.getElementById('srcTrigger').onclick = () => {
+        const g = document.getElementById('srcGrid');
+        g.style.display = g.style.display === 'grid' ? 'none' : 'grid';
+    };
+
+    window.updateUI = () => {
+        const pkg = CONFIG.packages.find(x => x.id === ps.value);
+        document.getElementById('pDesc').textContent = pkg ? pkg.desc : '';
+        window.calculate();
+    };
+
+    window.updateUI();
+}
+
+window.calculate = () => {
+    const adBud = parseFloat(document.getElementById('adBud').value) || 0;
+    const months = parseInt(document.querySelector('input[name="mon"]:checked').value);
+    const strat = document.querySelector('input[name="strat"]:checked').value;
+    const pkg = CONFIG.packages.find(x => x.id === document.getElementById('pSel').value);
+    
+    const mult = CONFIG.periods.find(x => x.v === months).m;
+    const getStats = (s) => ({
+        r: (adBud / 1000) * s.r * mult,
+        c: (adBud / 1000) * s.c * mult,
+        s: (adBud / 1000) * s.s * mult,
+        n: (adBud / 1000) * s.n * mult
+    });
+
+    const current = getStats(CONFIG.scenarios[strat]);
+    const base = getStats(CONFIG.scenarios.BASE);
+    const boost = getStats(CONFIG.scenarios.COMBO);
+
+    const resGroup = document.getElementById('resGroup');
+    resGroup.style.display = 'grid';
+    resGroup.classList.remove('animate-up');
+    void resGroup.offsetWidth; // trigger reflow
+    resGroup.classList.add('animate-up');
+
+    // Fin model
+    const pPrice = strat === 'BASE' ? 0 : pkg.price;
+    document.getElementById('resPkgPrice').textContent = fmt(pPrice) + ' ₽';
+    document.getElementById('resAdBudget').textContent = fmt(adBud) + ' ₽';
+    document.getElementById('resTotal').textContent = fmt(pPrice + adBud) + ' ₽';
+
+    // Main Stats
+    document.getElementById('outReach').textContent = fmt(current.r);
+    document.getElementById('outSub').textContent = fmt(current.s);
+    document.getElementById('outNext').textContent = fmt(current.n);
+
+    // Win Factor
+    document.getElementById('winFactor').textContent = strat === 'BASE' ? '+0%' : `+${Math.round((current.s / base.s - 1) * 100)}%`;
+
+    // Mini Chart
+    const drawChart = () => {
+        const b = document.getElementById('barChart'); b.innerHTML = '';
+        const w = CONFIG.weights[months]; const mw = Math.max(...w);
+        w.forEach(val => {
+            const bar = document.createElement('div'); bar.className = 'bar';
+            bar.style.height = (val / mw * 100) + '%'; b.appendChild(bar);
+        });
+    };
+    drawChart();
+
+    // Impact Table
+    const rows = [
+        { l: 'Охват', k: 'r' }, { l: 'Клики', k: 'c' },
+        { l: 'Подписчики', k: 's' }, { l: 'Leads', k: 'n' }
+    ];
+    document.getElementById('impactBody').innerHTML = rows.map(r => `
+        <tr>
+            <td class="t-label">${r.l}</td>
+            <td class="t-base">${fmt(base[r.k])}</td>
+            <td class="t-target">${fmt(boost[r.k])}</td>
+            <td class="t-win">+${Math.round((boost[r.k]/base[r.k]-1)*100)}%</td>
+        </tr>
+    `).join('');
+};
+
+init();
+</script>
+
+</body>
+</html>
